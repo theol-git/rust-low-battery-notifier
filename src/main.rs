@@ -11,11 +11,11 @@ use notify_rust::Notification;
 #[command(version, about, long_about = None)]
 struct Cli {
     /// Battery Percentage Threshold to trigger notification
-    #[arg(short, long, default_value_t = 5, value_parser = clap::value_parser!(u8).range(1..=100))]
+    #[arg(long, default_value_t = 5, value_parser = clap::value_parser!(u8).range(1..=100))]
     notification_threshold: u8,
 
     /// Delay to wait before rerunning the battery check
-    #[arg(short, long, default_value_t = 30, value_parser = clap::value_parser!(u64).range(1..))]
+    #[arg(long, default_value_t = 30, value_parser = clap::value_parser!(u64).range(1..))]
     delay_after_notification_close: u64,
 }
 
