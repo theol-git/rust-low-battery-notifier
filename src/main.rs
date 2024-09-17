@@ -4,12 +4,26 @@ use std::io;
 use std::thread;
 use std::time::Duration;
 
+use clap::Parser;
 use notify_rust::Notification;
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Battery Percentage Threshold to trigger notification
+    #[arg(short, long, default_value_t = 5, value_parser = clap::value_parser!(u8).range(1..=100))]
+    notification_threshold: u8,
+
+    /// Delay to wait before rerunning the battery check
+    #[arg(short, long, default_value_t = 30, value_parser = clap::value_parser!(u64).range(1..))]
+    delay_after_notification_close: u64,
+}
 
 #[cfg(all(unix, not(target_os = "macos")))]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    const NOTIFICATION_THRESHOLD: f32 = 0.33;
-    //const NOTIFICATION_THRESHOLD: f32 = 0.05;
+    let cli = Cli::parse();
+
+    let notification_threshold = (cli.notification_threshold / 100) as f32;
 
     let manager = battery::Manager::new()?;
     let mut battery = match manager.batteries()?.next() {
@@ -27,14 +41,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         manager.refresh(&mut battery)?;
 
-        if battery.state_of_charge().value < NOTIFICATION_THRESHOLD {
+        if battery.state_of_charge().value < notification_threshold {
             Notification::new()
                 .body("Battery low! Please charge.")
                 .icon("dialog-warning")
                 .urgency(notify_rust::Urgency::Critical)
                 .show()
                 .unwrap()
-                .on_close(|| thread::sleep(Duration::from_secs(30)));
+                .on_close(|reason: notify_rust::CloseReason| {
+                    println!("Low battery notification closed, reason: {reason:?}");
+                    thread::sleep(Duration::from_secs(cli.delay_after_notification_close));
+                });
             continue;
         }
 
