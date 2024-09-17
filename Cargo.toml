@@ -1,0 +1,8 @@
+[package]
+name = "low-battery-notifier"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+notify-rust = "4.11.3"
+starship-battery = "0.10.0"
